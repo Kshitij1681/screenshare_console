@@ -23,8 +23,27 @@ const PORT = Number(process.env.PORT ?? 9000);
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(here, "../client/dist");
 
+// When the front end is hosted apart from signaling — a static host like Vercel
+// serving the build while this process runs elsewhere — the socket arrives
+// cross-origin. Browsers do not apply CORS to WebSocket handshakes, so the check
+// has to happen here. Unset means allow any origin, which is right for local dev.
+const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((o) => o.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+function originAllowed(origin) {
+  if (ALLOWED_ORIGINS.length === 0) return true;
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.includes(origin.replace(/\/$/, ""));
+}
+
 const app = express();
-app.get("/healthz", (_req, res) => res.json({ ok: true, ...stats() }));
+app.get("/healthz", (req, res) => {
+  const origin = req.get("origin");
+  if (origin && originAllowed(origin)) res.set("Access-Control-Allow-Origin", origin);
+  res.json({ ok: true, ...stats() });
+});
 // Serving the built client is optional; in dev, Vite owns the front end.
 app.use(express.static(clientDist));
 app.get("*", (_req, res, next) => {
@@ -32,7 +51,12 @@ app.get("*", (_req, res, next) => {
 });
 
 const server = createServer(app);
-const wss = new WebSocketServer({ server, path: "/ws", maxPayload: 256 * 1024 });
+const wss = new WebSocketServer({
+  server,
+  path: "/ws",
+  maxPayload: 256 * 1024,
+  verifyClient: ({ origin }) => originAllowed(origin),
+});
 
 function send(ws, payload) {
   if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(payload));

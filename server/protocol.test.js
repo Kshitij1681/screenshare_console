@@ -219,6 +219,39 @@ const shoutyWelcome = await shouty.wait('welcome')
 check('room code is normalized', () => assert.equal(shoutyWelcome.room, 'design-review'))
 shouty.close()
 
+// --- origin allowlist ------------------------------------------------------
+// Needs its own server: the allowlist is read from env at startup. Unset (the
+// case every check above runs under) means allow any origin.
+const GUARDED_PORT = PORT + 1
+const guarded = spawn(process.execPath, [join(here, 'index.js')], {
+  env: { ...process.env, PORT: String(GUARDED_PORT), ALLOWED_ORIGINS: 'https://console.example.com' },
+  stdio: 'ignore',
+})
+for (let i = 0; i < 50; i += 1) {
+  const up = await new Promise((resolve) => {
+    const sock = connect(GUARDED_PORT, 'localhost')
+    sock.on('connect', () => (sock.destroy(), resolve(true)))
+    sock.on('error', () => resolve(false))
+  })
+  if (up) break
+  await settle(100)
+}
+
+const dialWithOrigin = (origin) =>
+  new Promise((resolve) => {
+    const ws = new WebSocket(`ws://localhost:${GUARDED_PORT}/ws`, { origin })
+    ws.once('open', () => (ws.close(), resolve('open')))
+    ws.once('error', () => resolve('refused'))
+  })
+
+const okOrigin = await dialWithOrigin('https://console.example.com')
+const badOrigin = await dialWithOrigin('https://not-ours.example.com')
+const noOrigin = await dialWithOrigin(undefined)
+check('listed origin is accepted', () => assert.equal(okOrigin, 'open'))
+check('unlisted origin is refused', () => assert.equal(badOrigin, 'refused'))
+check('missing origin is refused when a list is set', () => assert.equal(noOrigin, 'refused'))
+guarded.kill()
+
 // --- departure -------------------------------------------------------------
 carol.close()
 const left = await bob.wait('peer-left')

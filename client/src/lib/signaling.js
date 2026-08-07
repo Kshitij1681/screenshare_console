@@ -6,6 +6,12 @@
  * room as a new participant. Callers must therefore tear down any existing peer
  * mesh when a second `welcome` arrives.
  */
+// Same origin by default: the Vite proxy in dev and the Node server in
+// production both serve /ws alongside the page. Set VITE_SIGNALING_URL at build
+// time when the front end lives somewhere that cannot hold a socket open — a
+// static host like Vercel — pointing at wherever signaling actually runs.
+const SIGNALING_ORIGIN = (import.meta.env.VITE_SIGNALING_URL ?? '').trim()
+
 export function createSignaling({ onMessage, onStatus }) {
   let ws = null
   let attempt = 0
@@ -13,6 +19,15 @@ export function createSignaling({ onMessage, onStatus }) {
   let retryTimer = null
 
   const url = () => {
+    if (SIGNALING_ORIGIN) {
+      // Accept either scheme, so the env var can be pasted straight from the
+      // host's dashboard: https://signal.example.com → wss://signal.example.com/ws
+      const u = new URL(SIGNALING_ORIGIN)
+      if (u.protocol === 'https:') u.protocol = 'wss:'
+      if (u.protocol === 'http:') u.protocol = 'ws:'
+      if (u.pathname === '/') u.pathname = '/ws'
+      return u.href
+    }
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
     return `${proto}//${location.host}/ws`
   }
