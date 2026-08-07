@@ -1,0 +1,179 @@
+@import 'tailwindcss';
+
+/*
+  Console — visual language borrowed from video engineering gear.
+  Cool graphite surfaces, hairline rules instead of cards, monospace for
+  anything that is data. Two accents, each locked to one meaning:
+    tally  = this source is live (sharing, recording, leaving)
+    signal = connection health, focus rings
+  Nothing else gets to be colourful.
+*/
+@theme {
+  --color-ink-0: #0b0e12;
+  --color-ink-1: #0e1116;
+  --color-ink-2: #161a21;
+  --color-ink-3: #1e242d;
+  --color-ink-4: #273040;
+
+  --color-line: #262d38;
+  --color-line-bright: #36404f;
+
+  --color-txt-0: #e4e9f0;
+  --color-txt-1: #98a3b3;
+  --color-txt-2: #5d6878;
+
+  --color-tally: #ff3b2f;
+  --color-tally-dim: #7f1d18;
+  --color-signal: #4dd8c0;
+  --color-signal-dim: #1f4f47;
+  --color-amber: #f2a93b;
+
+  --font-display: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  --radius-panel: 3px;
+}
+
+@layer base {
+  * {
+    min-width: 0;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background: var(--color-ink-0);
+    color: var(--color-txt-0);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+
+  /* Data is monospace and tabular, so digits never shift as they tick. */
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Small caps label used for every section header and unit. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-txt-2);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--color-signal-dim);
+    color: var(--color-txt-0);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-ink-3);
+    border: 3px solid var(--color-ink-1);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-4);
+  }
+}
+
+@layer utilities {
+  /* The tally light. Only ever means "this source is live". */
+  .tally-glow {
+    box-shadow:
+      0 0 0 1px var(--color-tally),
+      0 0 18px -2px color-mix(in oklab, var(--color-tally) 55%, transparent);
+  }
+
+  .pulse-tally {
+    animation: pulse-tally 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-tally {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  .rise {
+    animation: rise 220ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .float-up {
+    animation: float-up 2.4s cubic-bezier(0.3, 0.8, 0.4, 1) forwards;
+  }
+
+  @keyframes float-up {
+    0% {
+      opacity: 0;
+      transform: translateY(0) scale(0.8);
+    }
+    18% {
+      opacity: 1;
+      transform: translateY(-12px) scale(1.1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-96px) scale(1);
+    }
+  }
+
+  /* Faint scanline wash over empty monitors — reads as "no signal" without
+     needing a label. */
+  .no-signal {
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        color-mix(in oklab, var(--color-txt-2) 7%, transparent) 0 1px,
+        transparent 1px 3px
+      ),
+      radial-gradient(120% 90% at 50% 0%, var(--color-ink-2) 0%, var(--color-ink-0) 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

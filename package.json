@@ -1,0 +1,20 @@
+{
+  "name": "screenshare-console",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Multi-user screen sharing and session log, built on WebRTC.",
+  "scripts": {
+    "setup": "npm install && npm --prefix server install && npm --prefix client install",
+    "install:all": "npm run setup",
+    "dev": "concurrently -n server,client -c magenta,cyan \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "build": "npm --prefix client run build",
+    "start": "npm --prefix server start",
+    "test": "node server/protocol.test.js",
+    "test:e2e": "npm run build && node e2e/media.test.mjs",
+    "diagnose": "node e2e/diagnose.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "puppeteer-core": "^24.10.2"
+  }
+}
